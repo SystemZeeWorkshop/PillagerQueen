@@ -10,16 +10,19 @@ import net.minecraft.client.model.HierarchicalModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
+import net.minecraft.util.Mth;
 
 public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
     private static final Vector3f ANIMATION_VECTOR_CACHE = new Vector3f();
 
     /** ANIMATIONS **/
-    private final ModelPart root, head;
+    private final ModelPart root, head, leftLeg, rightLeg;
 
     public PillagerQueenModel(ModelPart root) {
         this.root = root;
         this.head = root.getChild("root").getChild("torso").getChild("head");
+        this.leftLeg = root.getChild("root").getChild("leg_left");
+        this.rightLeg = root.getChild("root").getChild("leg_right");
     }
 
     public static LayerDefinition createBodyLayer() {
@@ -78,7 +81,15 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
         this.head.yRot = netHeadYaw * 0.017453292F;
         this.head.xRot = headPitch * 0.017453292F;
 
-        KeyframeAnimations.animate(this, PillagerQueenAnimations.PILLAGERQUEEN_TEST, (long) (50.0F * ageInTicks), 1.0F, ANIMATION_VECTOR_CACHE);
+        KeyframeAnimations.animate(this, PillagerQueenAnimations.PILLAGERQUEEN_IDLE, (long) (50.0F * ageInTicks), 1.0F, ANIMATION_VECTOR_CACHE);
+
+        /** LEG SWINGS **/
+        this.rightLeg.xRot = Mth.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount * 0.5F;
+        this.rightLeg.yRot = 0.0F;
+        this.rightLeg.zRot = 0.0F;
+        this.leftLeg.xRot = Mth.cos(limbSwing * 0.6662F + 3.1415927F) * 1.4F * limbSwingAmount * 0.5F;
+        this.leftLeg.yRot = 0.0F;
+        this.leftLeg.zRot = 0.0F;
 
     }
 
@@ -89,7 +100,7 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
 
     @Override
     public ModelPart root() {
-        return this.root();
+        return root;
     }
 
 }
