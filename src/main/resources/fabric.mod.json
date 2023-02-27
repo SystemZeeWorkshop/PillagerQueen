@@ -16,13 +16,13 @@
   "icon": "mod_icon.png",
   "entrypoints": {
     "main": [
-      "com.syszee.example.core.ModMain"
+      "com.syszee.pillagerqueen.core.ModMain"
     ],
     "client": [
-      "com.syszee.example.core.ModClient"
+      "com.syszee.pillagerqueen.core.ModClient"
     ],
     "fabric-datagen": [
-      "com.syszee.example.core.ModDataGen"
+      "com.syszee.pillagerqueen.core.ModDataGen"
     ]
   },
   "mixins": [
