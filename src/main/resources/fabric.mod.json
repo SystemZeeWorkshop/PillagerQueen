@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+
+  "name": "${mod_id}",
+  "description": "Developed for SystemZee, do not redistribute!",
+
+  "authors": [
+    "SystemZee's Workshop"
+  ],
+
+  "license": "All Rights Reserved",
+
+  "environment": "*",
+  "icon": "mod_icon.png",
+  "entrypoints": {
+    "main": [
+      "com.syszee.example.core.ModMain"
+    ],
+    "client": [
+      "com.syszee.example.core.ModClient"
+    ],
+    "fabric-datagen": [
+      "com.syszee.example.core.ModDataGen"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json"
+  ],
+
+  "depends": {
+    "fabric-api": "*",
+    "minecraft": "~1.19"
+  }
+}
