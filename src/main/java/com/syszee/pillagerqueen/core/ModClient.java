@@ -12,7 +12,7 @@ public class ModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ModModelLayers.init();
-        EntityRendererRegistry.register(ModEntities.EXAMPLE, ExampleEntityRenderer::new);
+        //EntityRendererRegistry.register(ModEntities.EXAMPLE, ExampleEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.PILLAGER_QUEEN, PillagerQueenRenderer::new);
     }
 }

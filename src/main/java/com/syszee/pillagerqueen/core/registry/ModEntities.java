@@ -17,11 +17,13 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SpawnEggItem;
 
 public class ModEntities {
+    /**
     public static final EntityType<ExampleEntity> EXAMPLE = register("example_entity", FabricEntityTypeBuilder.createMob()
             .entityFactory(ExampleEntity::new)
             .spawnGroup(MobCategory.MISC)
             .dimensions(EntityDimensions.scalable(1.0F, 1.0F))
             .trackRangeBlocks(10).build(), 0xff00ff, 0xff00ff);
+     **/
 
     public static final EntityType<PillagerQueenEntity> PILLAGER_QUEEN = register("pillager_queen", FabricEntityTypeBuilder.createMob()
             .entityFactory(PillagerQueenEntity::new)
@@ -31,7 +33,7 @@ public class ModEntities {
             .build(), 0xA77FC6, 0x7356D5);
 
     public static void init() {
-        FabricDefaultAttributeRegistry.register(EXAMPLE, ExampleEntity.createMobAttributes());
+        //FabricDefaultAttributeRegistry.register(EXAMPLE, ExampleEntity.createMobAttributes());
         FabricDefaultAttributeRegistry.register(PILLAGER_QUEEN, PillagerQueenEntity.createAttributes());
     }
 

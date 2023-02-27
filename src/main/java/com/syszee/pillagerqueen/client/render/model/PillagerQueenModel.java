@@ -78,7 +78,7 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
         this.head.yRot = netHeadYaw * 0.017453292F;
         this.head.xRot = headPitch * 0.017453292F;
 
-        KeyframeAnimations.animate(this, PillagerQueenAnimations.PILLAGERQUEEN_IDLE, (long) (50.0F * ageInTicks), 1.0F, ANIMATION_VECTOR_CACHE);
+        KeyframeAnimations.animate(this, PillagerQueenAnimations.PILLAGERQUEEN_TEST, (long) (50.0F * ageInTicks), 1.0F, ANIMATION_VECTOR_CACHE);
 
     }
 

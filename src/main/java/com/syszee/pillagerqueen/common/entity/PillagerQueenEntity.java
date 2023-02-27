@@ -23,9 +23,6 @@ public class PillagerQueenEntity extends Monster {
         this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, Player.class, 15.0F, 1.0F));
     }
 
-    /** ANIMATION **/
-    private float prevMoveAnimationWeight, moveAnimationWeight;
-
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MOVEMENT_SPEED, 0.5).add(Attributes.FOLLOW_RANGE, 12.0).add(Attributes.MAX_HEALTH, 24.0);
     }
@@ -34,21 +31,8 @@ public class PillagerQueenEntity extends Monster {
     public void tick() {
         super.tick();
 
-        if(!this.level.isClientSide) {
 
-        } else {
-            this.prevMoveAnimationWeight = this.moveAnimationWeight;
-            if (this.animationSpeed >= 0.05F) {
-                this.moveAnimationWeight = Math.min(this.moveAnimationWeight + 0.1F, Math.min(this.animationSpeed * 2.0F, 1.0F));
-            } else {
-                this.moveAnimationWeight = Math.max(this.moveAnimationWeight - 0.1F, 0.0F);
-            }
-        }
 
-    }
-
-    public float getMoveAnimationWeight(float partialTicks) {
-        return Mth.lerp(partialTicks, this.prevMoveAnimationWeight, this.moveAnimationWeight);
     }
 
 

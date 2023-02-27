@@ -9,7 +9,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 
 public class ModItems {
-    public static final ExampleItem EXAMPLE_ITEM = register("example_item", new ExampleItem(new FabricItemSettings().tab(CreativeModeTab.TAB_MISC)));
+    //public static final ExampleItem EXAMPLE_ITEM = register("example_item", new ExampleItem(new FabricItemSettings().tab(CreativeModeTab.TAB_MISC)));
 
     public static void init() {
     }
