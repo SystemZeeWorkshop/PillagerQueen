@@ -1,6 +1,10 @@
 package com.syszee.pillagerqueen.common.entity;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -14,14 +18,18 @@ import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.pathfinder.Path;
 
 import java.util.EnumSet;
+import java.util.Random;
 
 public class PillagerQueenEntity extends Monster {
 
     public final AnimationState walkAnimationState = new AnimationState();
     public final AnimationState meleeAttackAnimationState = new AnimationState();
+    public final AnimationState floatingAnimationState = new AnimationState();
+    public final AnimationState fallingAnimationState = new AnimationState();
     public PillagerQueenEntity(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
     }
@@ -32,6 +40,7 @@ public class PillagerQueenEntity extends Monster {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, Player.class, 15.0F, 1.0F));
         this.goalSelector.addGoal(4, new QueenMeleeAttackGoal(this, 1.0F, false));
+        this.goalSelector.addGoal(3, new QueenFlyingGoal(this));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[]{Raider.class})).setAlertOthers(new Class[0]));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal(this, Player.class, true));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, AbstractVillager.class, false));
@@ -40,7 +49,7 @@ public class PillagerQueenEntity extends Monster {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MOVEMENT_SPEED, 0.35).add(Attributes.FOLLOW_RANGE, 12.0).add(Attributes.MAX_HEALTH, 48.0);
+        return Monster.createMonsterAttributes().add(Attributes.MOVEMENT_SPEED, 0.35).add(Attributes.FOLLOW_RANGE, 64.0).add(Attributes.MAX_HEALTH, 48.0).add(Attributes.KNOCKBACK_RESISTANCE, 0.8F);
     }
 
     @Override
@@ -55,13 +64,21 @@ public class PillagerQueenEntity extends Monster {
             this.walkAnimationState.startIfStopped(this.tickCount);
         }else this.walkAnimationState.stop();
 
+        if(!this.isOnGround() && !this.isNoGravity() && !this.isAggressive()){
+            this.fallingAnimationState.startIfStopped(this.tickCount);
+        }else this.fallingAnimationState.stop();
+
     }
 
     @Override
     public void handleEntityEvent(byte b) {
         if(b == 98){
             this.meleeAttackAnimationState.start(this.tickCount);
-        }else{
+        }else if(b == 99){
+            this.floatingAnimationState.startIfStopped(this.tickCount);
+        }else if(b == 100){
+            this.floatingAnimationState.stop();
+        }else {
             super.handleEntityEvent(b);
         }
     }
@@ -221,6 +238,62 @@ public class PillagerQueenEntity extends Monster {
         }
     }
 
+    class QueenFlyingGoal extends Goal {
+
+        private final PillagerQueenEntity pillagerQueen;
+        Random r = new Random();
+
+        public QueenFlyingGoal(PillagerQueenEntity pillagerQueen) {
+            this.pillagerQueen = pillagerQueen;
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            if(pillagerQueen.getHealth() > pillagerQueen.getMaxHealth()/2){
+                return true;
+            }else{
+                return false;
+            }
+        }
+
+        @Override
+        public void start() {
+            super.start();
+            pillagerQueen.getLevel().broadcastEntityEvent(pillagerQueen, (byte) 99);
+        }
+
+        @Override
+        public void stop() {
+            super.stop();
+            pillagerQueen.setNoGravity(false);
+            pillagerQueen.getLevel().broadcastEntityEvent(pillagerQueen, (byte) 100);
+        }
+
+        @Override
+        public void tick() {
+            super.tick();
+
+            pillagerQueen.setNoGravity(true);
+
+            int targetY = pillagerQueen.getLevel().getHeight(Heightmap.Types.WORLD_SURFACE, pillagerQueen.getBlockX(), pillagerQueen.getBlockZ());
+            float maxFloatHeight = (pillagerQueen.getHealth()/4); // 12
+            int goalHeight = (int) (targetY + maxFloatHeight);
+            BlockPos blockPos = new BlockPos(pillagerQueen.getX(), pillagerQueen.getY(), pillagerQueen.getZ());
+
+            if((pillagerQueen.getY() < goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos.above(2))){
+                pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() + 0.5F, pillagerQueen.getZ());
+            }else if((pillagerQueen.getY() > goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos)){
+                pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() - 1F, pillagerQueen.getZ());
+            }
+
+            LivingEntity livingEntity = pillagerQueen.getTarget();
+            if(livingEntity != null){
+                pillagerQueen.getLookControl().setLookAt(livingEntity, 30.0F, 30.0F);
+            }
+
+        }
+    }
 
 
 }

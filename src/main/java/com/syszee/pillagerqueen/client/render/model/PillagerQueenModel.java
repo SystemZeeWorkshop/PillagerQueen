@@ -113,6 +113,8 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
         if(!pillagerQueen.meleeAttackAnimationState.isStarted()) this.animate(pillagerQueen.walkAnimationState, PillagerQueenAnimations.PILLAGERQUEEN_WALK, ageInTicks);
         if (pillagerQueen.meleeAttackAnimationState.getAccumulatedTime() / 1000.0F >= PillagerQueenAnimations.PILLAGERQUEEN_MELEE.lengthInSeconds()) pillagerQueen.meleeAttackAnimationState.stop();
 
+        this.animate(pillagerQueen.floatingAnimationState, PillagerQueenAnimations.PILLAGERQUEEN_FLOATING, ageInTicks);
+        this.animate(pillagerQueen.fallingAnimationState, PillagerQueenAnimations.PILLAGERQUEEN_FALLING, ageInTicks);
 
     }
 
