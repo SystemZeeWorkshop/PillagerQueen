@@ -28,8 +28,8 @@ public class ModEntities {
     public static final EntityType<PillagerQueenEntity> PILLAGER_QUEEN = register("pillager_queen", FabricEntityTypeBuilder.createMob()
             .entityFactory(PillagerQueenEntity::new)
             .spawnGroup(MobCategory.MISC)
-            .dimensions(EntityDimensions.scalable(1.0F, 2.0F))
-            .trackRangeBlocks(10)
+            .dimensions(EntityDimensions.scalable(0.9F, 1.9F))
+            .trackRangeBlocks(100)
             .build(), 0xA77FC6, 0x7356D5);
 
     public static void init() {

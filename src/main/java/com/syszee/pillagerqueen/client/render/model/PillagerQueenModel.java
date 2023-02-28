@@ -11,18 +11,21 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.AnimationState;
 
 public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
     private static final Vector3f ANIMATION_VECTOR_CACHE = new Vector3f();
 
     /** ANIMATIONS **/
-    private final ModelPart root, head, leftLeg, rightLeg;
+    private final ModelPart root, head, leftLeg, rightLeg, leftArm, rightArm;
 
     public PillagerQueenModel(ModelPart root) {
         this.root = root;
         this.head = root.getChild("root").getChild("torso").getChild("head");
         this.leftLeg = root.getChild("root").getChild("leg_left");
         this.rightLeg = root.getChild("root").getChild("leg_right");
+        this.leftArm = root.getChild("root").getChild("torso").getChild("arm_left");
+        this.rightArm = root.getChild("root").getChild("torso").getChild("arm_right");
     }
 
     public static LayerDefinition createBodyLayer() {
@@ -31,10 +34,6 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
 
         PartDefinition root = partdefinition.addOrReplaceChild("root", CubeListBuilder.create(), PartPose.offset(0.0F, 23.0F, 0.0F));
         PartDefinition skirt = root.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(55, 23).addBox(-4.0F, 0.5F, 0.0F, 8.0F, 7.0F, 4.0F, new CubeDeformation(0.5F)), PartPose.offset(0.0F, -12.5F, -2.0F));
-        PartDefinition wing_left = root.addOrReplaceChild("wing_left", CubeListBuilder.create().texOffs(10, 64).mirror().addBox(0.0F, -7.0F, 0.0F, 11.0F, 16.0F, 0.0F, new CubeDeformation(0.0F)).mirror(false), PartPose.offsetAndRotation(1.0F, -22.0F, 2.0F, 0.0055F, -0.1747F, 0.0861F));
-        PartDefinition wing_left_tip = wing_left.addOrReplaceChild("wing_left_tip", CubeListBuilder.create().texOffs(33, 93).mirror().addBox(0.0F, -22.0F, 0.0F, 22.0F, 35.0F, 0.0F, new CubeDeformation(0.0F)).mirror(false), PartPose.offsetAndRotation(11.0F, 1.0F, 0.0F, 0.0F, 0.829F, 0.0F));
-        PartDefinition wing_right = root.addOrReplaceChild("wing_right", CubeListBuilder.create().texOffs(10, 64).addBox(-11.0F, -7.0F, 0.0F, 11.0F, 16.0F, 0.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.0F, -22.0F, 2.0F, 0.0055F, 0.1747F, -0.0861F));
-        PartDefinition wing_right_tip = wing_right.addOrReplaceChild("wing_right_tip", CubeListBuilder.create().texOffs(33, 93).addBox(-22.0F, -22.0F, 0.0F, 22.0F, 35.0F, 0.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-11.0F, 1.0F, 0.0F, 0.0F, -0.829F, 0.0F));
         PartDefinition leg_right = root.addOrReplaceChild("leg_right", CubeListBuilder.create().texOffs(112, 13).addBox(-4.0F, 0.0F, -2.0F, 4.0F, 13.0F, 4.0F, new CubeDeformation(0.5F))
                 .texOffs(39, 23).addBox(-4.0F, 0.0F, -2.0F, 4.0F, 13.0F, 4.0F, new CubeDeformation(0.0F)), PartPose.offset(0.0F, -12.0F, 0.0F));
         PartDefinition leg_left = root.addOrReplaceChild("leg_left", CubeListBuilder.create().texOffs(112, 13).mirror().addBox(0.0F, 0.0F, -2.0F, 4.0F, 13.0F, 4.0F, new CubeDeformation(0.5F)).mirror(false)
@@ -69,6 +68,10 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
         PartDefinition helmet_top_r1 = helmet.addOrReplaceChild("helmet_top_r1", CubeListBuilder.create().texOffs(83, 31).addBox(-7.4506F, -28.54F, -7.4506F, 8.0F, 5.0F, 8.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, -16.3F, 9.8F, 1.1475F, -0.3897F, -0.7006F));
         PartDefinition helmet_r1 = helmet.addOrReplaceChild("helmet_r1", CubeListBuilder.create().texOffs(57, 36).addBox(-4.0F, -30.0F, -4.0F, 8.0F, 5.0F, 8.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, 0.0F, -0.6F, 0.7333F, -0.639F, -0.493F));
         PartDefinition nose = head.addOrReplaceChild("nose", CubeListBuilder.create().texOffs(65, 19).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offset(1.3709F, -3.7333F, -4.8348F));
+        PartDefinition wing_right = torso.addOrReplaceChild("wing_right", CubeListBuilder.create().texOffs(10, 64).addBox(-11.0F, -7.0F, 0.0F, 11.0F, 16.0F, 0.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.0F, -11.0F, 2.0F, 0.0055F, 0.1747F, -0.0861F));
+        PartDefinition wing_right_tip = wing_right.addOrReplaceChild("wing_right_tip", CubeListBuilder.create().texOffs(33, 93).addBox(-22.0F, -22.0F, 0.0F, 22.0F, 35.0F, 0.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-11.0F, 1.0F, 0.0F, 0.0F, -0.829F, 0.0F));
+        PartDefinition wing_left = torso.addOrReplaceChild("wing_left", CubeListBuilder.create().texOffs(10, 64).mirror().addBox(0.0F, -7.0F, 0.0F, 11.0F, 16.0F, 0.0F, new CubeDeformation(0.0F)).mirror(false), PartPose.offsetAndRotation(1.0F, -11.0F, 2.0F, 0.0055F, -0.1747F, 0.0861F));
+        PartDefinition wing_left_tip = wing_left.addOrReplaceChild("wing_left_tip", CubeListBuilder.create().texOffs(33, 93).mirror().addBox(0.0F, -22.0F, 0.0F, 22.0F, 35.0F, 0.0F, new CubeDeformation(0.0F)).mirror(false), PartPose.offsetAndRotation(11.0F, 1.0F, 0.0F, 0.0F, 0.829F, 0.0F));
 
         return LayerDefinition.create(meshdefinition, 128, 128);
     }
@@ -90,6 +93,26 @@ public class PillagerQueenModel extends HierarchicalModel<PillagerQueenEntity> {
         this.leftLeg.xRot = Mth.cos(limbSwing * 0.6662F + 3.1415927F) * 1.4F * limbSwingAmount * 0.5F;
         this.leftLeg.yRot = 0.0F;
         this.leftLeg.zRot = 0.0F;
+
+        /** DEFAULT ARM SWING
+        this.rightArm.xRot = Mth.cos(limbSwing * 0.6662F + 3.1415927F) * 2.0F * limbSwingAmount * 0.5F;
+        this.rightArm.yRot = 0.0F;
+        this.rightArm.zRot = 0.0F;
+        this.leftArm.xRot = Mth.cos(limbSwing * 0.6662F) * 2.0F * limbSwingAmount * 0.5F;
+        this.leftArm.yRot = 0.0F;
+        this.leftArm.zRot = 0.0F;
+        this.rightLeg.xRot = Mth.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount * 0.5F;
+        this.rightLeg.yRot = 0.0F;
+        this.rightLeg.zRot = 0.0F;
+        this.leftLeg.xRot = Mth.cos(limbSwing * 0.6662F + 3.1415927F) * 1.4F * limbSwingAmount * 0.5F;
+        this.leftLeg.yRot = 0.0F;
+        this.leftLeg.zRot = 0.0F;
+         **/
+
+        this.animate(pillagerQueen.meleeAttackAnimationState, PillagerQueenAnimations.PILLAGERQUEEN_MELEE, ageInTicks);
+        if(!pillagerQueen.meleeAttackAnimationState.isStarted()) this.animate(pillagerQueen.walkAnimationState, PillagerQueenAnimations.PILLAGERQUEEN_WALK, ageInTicks);
+        if (pillagerQueen.meleeAttackAnimationState.getAccumulatedTime() / 1000.0F >= PillagerQueenAnimations.PILLAGERQUEEN_MELEE.lengthInSeconds()) pillagerQueen.meleeAttackAnimationState.stop();
+
 
     }
 
