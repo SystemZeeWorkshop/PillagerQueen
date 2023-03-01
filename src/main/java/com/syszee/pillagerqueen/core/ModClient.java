@@ -6,6 +6,7 @@ import com.syszee.pillagerqueen.client.render.model.ModModelLayers;
 import com.syszee.pillagerqueen.core.registry.ModEntities;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.minecraft.world.entity.raid.Raid;
 
 public class ModClient implements ClientModInitializer {
 
