@@ -4,6 +4,7 @@
   "package": "com.syszee.pillagerqueen.core.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "RaidMixin"
   ],
   "client": [
     "ExampleMixin"

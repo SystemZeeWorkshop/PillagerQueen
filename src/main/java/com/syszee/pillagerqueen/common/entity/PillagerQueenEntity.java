@@ -47,14 +47,14 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 
-public class PillagerQueenEntity extends Monster {
+public class PillagerQueenEntity extends Raider {
 
     public final AnimationState walkAnimationState = new AnimationState();
     public final AnimationState meleeAttackAnimationState = new AnimationState();
     public final AnimationState floatingAnimationState = new AnimationState();
     public final AnimationState fallingAnimationState = new AnimationState();
     private static final EntityDataAccessor<Boolean> HAS_SPAWNED_PATROL = SynchedEntityData.defineId(PillagerQueenEntity.class, EntityDataSerializers.BOOLEAN);;
-    public PillagerQueenEntity(EntityType<? extends Monster> entityType, Level level) {
+    public PillagerQueenEntity(EntityType<? extends Raider> entityType, Level level) {
         super(entityType, level);
     }
 
@@ -85,6 +85,11 @@ public class PillagerQueenEntity extends Monster {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.getEntityData().define(HAS_SPAWNED_PATROL, false);
+    }
+
+    @Override
+    public void applyRaidBuffs(int i, boolean bl) {
+
     }
 
     @Override
@@ -220,6 +225,11 @@ public class PillagerQueenEntity extends Monster {
             }
 
         return super.hurt(damageSource, f);
+    }
+
+    @Override
+    public SoundEvent getCelebrateSound() {
+        return null;
     }
 
     public void setHasSpawnedPatrol(boolean b){

@@ -28,7 +28,7 @@
   "mixins": [
     "${mod_id}.mixins.json"
   ],
-
+  "accessWidener" : "pillagerqueen.accesswidener",
   "depends": {
     "fabric-api": "*",
     "minecraft": "~1.19"
