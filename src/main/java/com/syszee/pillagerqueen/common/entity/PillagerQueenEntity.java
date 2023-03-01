@@ -1,5 +1,6 @@
 package com.syszee.pillagerqueen.common.entity;
 
+import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -25,12 +26,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.Creeper;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.PatrollingMonster;
-import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
@@ -43,7 +42,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.core.jmx.Server;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Random;
 
 public class PillagerQueenEntity extends Monster {
@@ -93,14 +94,15 @@ public class PillagerQueenEntity extends Monster {
 
         Random r = new Random();
 
-        /** PARTICLES
-        for(int i = 0; i < 360; i++){
-            if(i % 20 == 0 && r.nextInt(3) == 1){
-                this.getLevel().addParticle(ParticleTypes.SMOKE,
-                        this.getX() + Math.cos(i), this.getY(), this.getZ() + Math.sin(i),
-                        0.0, 0.0, 0.0);
-            }
-        }**/
+        /**
+         for(int i = 0; i < 360; i++){
+         if(i % 2 == 0){
+         this.getLevel().addParticle(ParticleTypes.POOF,
+         this.getX() + Math.cos(i), this.getY(), this.getZ() + Math.sin(i),
+         Math.cos(i), 0.0, Math.sin(i));
+         }
+         }
+         **/
     }
 
     @Override
@@ -124,18 +126,41 @@ public class PillagerQueenEntity extends Monster {
 
     @Override
     public void handleEntityEvent(byte b) {
-        if(b == 97){
+        if(b == 97){ // ATTACK FROM MELEE
             for(int i = 0; i < 10; i++){
                 this.level.addParticle(ParticleTypes.CRIT,
                         this.getRandomX(4), this.getRandomY(), this.getRandomZ(4),
                         2, 2, 2);
             }
-        }else if(b == 98){
+        }else if(b == 98){ // START RUNNING/MELEE
             this.meleeAttackAnimationState.start(this.tickCount);
-        }else if(b == 99){
+        }else if(b == 99){ // FLOATING SHOULD START
             this.floatingAnimationState.startIfStopped(this.tickCount);
-        }else if(b == 100){
+        }else if(b == 100) { // FLOATING SHOULD STOP
             this.floatingAnimationState.stop();
+        }else if(b == 101) { // SPAWN PATROL EFFECT
+
+            // 360 POOF
+            for(int i = 0; i < 360; i++){
+                if(i % 2 == 0){
+                    this.getLevel().addParticle(ParticleTypes.LARGE_SMOKE,
+                            this.getX() + Math.cos(i), this.getY(), this.getZ() + Math.sin(i),
+                            Math.cos(i), -0.25, Math.sin(i));
+                }
+            }
+
+            // AMBUSH REVEAL
+            for(AbstractIllager p : level.getNearbyEntities(AbstractIllager.class, TargetingConditions.DEFAULT, this, this.getBoundingBox().inflate(25.0D))){
+                for(int i = 0; i < 32; i++){
+
+                    // POOF
+                    this.getLevel().addParticle(ParticleTypes.POOF,
+                            p.getRandomX(3), p.getY(), p.getRandomZ(3),
+                            0.25D, 0.25D, 0.25D);
+
+                }
+            }
+
         }else {
             super.handleEntityEvent(b);
         }
@@ -144,15 +169,17 @@ public class PillagerQueenEntity extends Monster {
     @Override
     public boolean hurt(DamageSource damageSource, float f) {
 
-            if ((this.level instanceof ServerLevel)
+            // SHOULD WE SPAWN A PATROL
+            if ((!this.level.isClientSide)
                     && !hasSpawnedPatrol()
                     && this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)
                     && this.level.getGameRules().getBoolean(GameRules.RULE_DO_PATROL_SPAWNING)){
 
-                if(this.getLevel() != null){
                     ServerLevel serverLevel = (ServerLevel)this.level;
                     int targetY = this.getLevel().getHeight(Heightmap.Types.WORLD_SURFACE, this.getBlockX(), this.getBlockZ());
                     BlockPos blockPos = new BlockPos(this.getRandomX(10), targetY, this.getRandomZ(10));
+
+                    // SPAWN LEADER
                     PatrollingMonster patrollingLeader = (PatrollingMonster)EntityType.PILLAGER.create(serverLevel);
                     if (patrollingLeader != null) {
                         patrollingLeader.setPatrolLeader(true);
@@ -162,14 +189,34 @@ public class PillagerQueenEntity extends Monster {
                     patrollingLeader.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(blockPos), MobSpawnType.PATROL, (SpawnGroupData)null, (CompoundTag)null);
                     serverLevel.addFreshEntityWithPassengers(patrollingLeader);
                     setHasSpawnedPatrol(true);
+
+                    // SPAWN SUBORDINATES
                     for(int i = 0; i < 3; i++){
                         blockPos = new BlockPos(this.getRandomX(10), targetY, this.getRandomZ(10));
                         PatrollingMonster patrollingMonster = (PatrollingMonster)EntityType.PILLAGER.create(serverLevel);
                         patrollingMonster.setPos((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
                         patrollingMonster.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(blockPos), MobSpawnType.PATROL, (SpawnGroupData)null, (CompoundTag)null);
                         serverLevel.addFreshEntityWithPassengers(patrollingMonster);
+
+                        // SOUND: AMBUSH APPEAR CELEBRATE
+                        this.getLevel().playSound(null,
+                                patrollingMonster.getX(), patrollingMonster.getY(), patrollingMonster.getZ(),
+                                SoundEvents.PILLAGER_CELEBRATE,
+                                SoundSource.HOSTILE,
+                                1.0F, 1.0F);
+
                     }
-                }
+
+                    // SOUND: AMBUSH
+                    this.getLevel().playSound(null,
+                            getX(), getY(), getZ(),
+                            SoundEvents.ANVIL_LAND,
+                            SoundSource.HOSTILE,
+                            1.0F, 1.0F);
+
+                    // PARTICLE BROADCAST
+                    this.getLevel().broadcastEntityEvent(this, (byte) 101);
+
             }
 
         return super.hurt(damageSource, f);
