@@ -3,10 +3,21 @@ package com.syszee.pillagerqueen.common.entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -18,6 +29,7 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.PatrollingMonster;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
@@ -29,6 +41,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.apache.logging.log4j.core.jmx.Server;
 
 import java.util.EnumSet;
 import java.util.Random;
@@ -39,6 +52,7 @@ public class PillagerQueenEntity extends Monster {
     public final AnimationState meleeAttackAnimationState = new AnimationState();
     public final AnimationState floatingAnimationState = new AnimationState();
     public final AnimationState fallingAnimationState = new AnimationState();
+    private static final EntityDataAccessor<Boolean> HAS_SPAWNED_PATROL = SynchedEntityData.defineId(PillagerQueenEntity.class, EntityDataSerializers.BOOLEAN);;
     public PillagerQueenEntity(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
     }
@@ -58,7 +72,18 @@ public class PillagerQueenEntity extends Monster {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MOVEMENT_SPEED, 0.35).add(Attributes.FOLLOW_RANGE, 64.0).add(Attributes.MAX_HEALTH, 48.0).add(Attributes.KNOCKBACK_RESISTANCE, 0.8F);
+        return Monster.createMonsterAttributes()
+                .add(Attributes.MOVEMENT_SPEED, 0.45)
+                .add(Attributes.FOLLOW_RANGE, 64.0)
+                .add(Attributes.MAX_HEALTH, 48.0)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.8F)
+                .add(Attributes.ATTACK_DAMAGE, 6.0F);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.getEntityData().define(HAS_SPAWNED_PATROL, false);
     }
 
     @Override
@@ -76,15 +101,19 @@ public class PillagerQueenEntity extends Monster {
                         0.0, 0.0, 0.0);
             }
         }**/
+    }
 
-
-
+    @Override
+    public int getExperienceReward() {
+        this.xpReward = 40;
+        return super.getExperienceReward();
     }
 
     public void handleAnimations(){
 
         if(this.isAggressive()){
             this.walkAnimationState.startIfStopped(this.tickCount);
+            this.spawnSprintParticle();
         }else this.walkAnimationState.stop();
 
         if(!this.isOnGround() && !this.isNoGravity() && !this.isAggressive()){
@@ -110,6 +139,48 @@ public class PillagerQueenEntity extends Monster {
         }else {
             super.handleEntityEvent(b);
         }
+    }
+
+    @Override
+    public boolean hurt(DamageSource damageSource, float f) {
+
+            if ((this.level instanceof ServerLevel)
+                    && !hasSpawnedPatrol()
+                    && this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)
+                    && this.level.getGameRules().getBoolean(GameRules.RULE_DO_PATROL_SPAWNING)){
+
+                if(this.getLevel() != null){
+                    ServerLevel serverLevel = (ServerLevel)this.level;
+                    int targetY = this.getLevel().getHeight(Heightmap.Types.WORLD_SURFACE, this.getBlockX(), this.getBlockZ());
+                    BlockPos blockPos = new BlockPos(this.getRandomX(10), targetY, this.getRandomZ(10));
+                    PatrollingMonster patrollingLeader = (PatrollingMonster)EntityType.PILLAGER.create(serverLevel);
+                    if (patrollingLeader != null) {
+                        patrollingLeader.setPatrolLeader(true);
+                        patrollingLeader.findPatrolTarget();
+                    }
+                    patrollingLeader.setPos((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+                    patrollingLeader.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(blockPos), MobSpawnType.PATROL, (SpawnGroupData)null, (CompoundTag)null);
+                    serverLevel.addFreshEntityWithPassengers(patrollingLeader);
+                    setHasSpawnedPatrol(true);
+                    for(int i = 0; i < 3; i++){
+                        blockPos = new BlockPos(this.getRandomX(10), targetY, this.getRandomZ(10));
+                        PatrollingMonster patrollingMonster = (PatrollingMonster)EntityType.PILLAGER.create(serverLevel);
+                        patrollingMonster.setPos((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+                        patrollingMonster.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(blockPos), MobSpawnType.PATROL, (SpawnGroupData)null, (CompoundTag)null);
+                        serverLevel.addFreshEntityWithPassengers(patrollingMonster);
+                    }
+                }
+            }
+
+        return super.hurt(damageSource, f);
+    }
+
+    public void setHasSpawnedPatrol(boolean b){
+        this.getEntityData().set(HAS_SPAWNED_PATROL, b);
+    }
+
+    public boolean hasSpawnedPatrol(){
+        return (Boolean)this.getEntityData().get(HAS_SPAWNED_PATROL);
     }
 
     class QueenMeleeAttackGoal extends Goal {
@@ -329,12 +400,11 @@ public class PillagerQueenEntity extends Monster {
                 Vec3 vec3 = pillagerQueen.getTarget().getEyePosition();
                 AABB aabb = pillagerQueen.getBoundingBox().inflate(15.0);
 
-                if(!aabb.contains(vec3)) pillagerQueen.moveControl.setWantedPosition(livingEntity.getX(), pillagerQueen.getY(), livingEntity.getZ(), 5.0);
+                if(!aabb.contains(vec3)) pillagerQueen.moveControl.setWantedPosition(livingEntity.getX(), pillagerQueen.getY(), livingEntity.getZ(), 8.0);
             }
 
-
-
         }
+
     }
 
 
