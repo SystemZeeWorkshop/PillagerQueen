@@ -1,5 +1,6 @@
 package com.syszee.pillagerqueen.common.entity;
 
+import com.syszee.pillagerqueen.core.registry.ModSounds;
 import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -210,7 +211,7 @@ public class PillagerQueenEntity extends Monster {
                     // SOUND: AMBUSH
                     this.getLevel().playSound(null,
                             getX(), getY(), getZ(),
-                            SoundEvents.ANVIL_LAND,
+                            ModSounds.PILLAGER_QUEEN_AMBUSH,
                             SoundSource.HOSTILE,
                             1.0F, 1.0F);
 

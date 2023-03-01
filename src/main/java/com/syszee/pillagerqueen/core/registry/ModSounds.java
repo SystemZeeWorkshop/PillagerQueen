@@ -7,6 +7,8 @@ import net.minecraft.sounds.SoundEvent;
 
 public class ModSounds {
     public static final SoundEvent EXAMPLE = register("example_sound");
+    public static final SoundEvent PILLAGER_QUEEN_AMBUSH = register("entity.pillager_queen.ambush");
+    public static final SoundEvent PILLAGER_QUEEN_MELEE = register("entity.pillager_queen.melee");
 
     public static void init() {
     }

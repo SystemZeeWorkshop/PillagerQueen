@@ -1,0 +1,14 @@
+{
+  "entity.pillager_queen.ambush": {
+    "sounds": [
+      "pillagerqueen:entity/pillager_queen/ambush"
+    ]
+  },
+  "entity.pillager_queen.melee": {
+    "sounds": [
+      "pillagerqueen:entity/pillager_queen/melee",
+      "pillagerqueen:entity/pillager_queen/melee2",
+      "pillagerqueen:entity/pillager_queen/melee3"
+    ]
+  }
+}
