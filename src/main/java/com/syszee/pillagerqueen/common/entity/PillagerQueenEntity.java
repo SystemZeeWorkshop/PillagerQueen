@@ -2,10 +2,13 @@ package com.syszee.pillagerqueen.common.entity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
@@ -13,13 +16,19 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 import java.util.Random;
@@ -39,7 +48,7 @@ public class PillagerQueenEntity extends Monster {
         super.registerGoals();
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, Player.class, 15.0F, 1.0F));
-        this.goalSelector.addGoal(4, new QueenMeleeAttackGoal(this, 1.0F, false));
+        this.goalSelector.addGoal(4, new QueenMeleeAttackGoal(this, this, 1.0F, false));
         this.goalSelector.addGoal(3, new QueenFlyingGoal(this));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[]{Raider.class})).setAlertOthers(new Class[0]));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal(this, Player.class, true));
@@ -56,6 +65,20 @@ public class PillagerQueenEntity extends Monster {
     public void tick() {
         super.tick();
         handleAnimations();
+
+        Random r = new Random();
+
+        /** PARTICLES
+        for(int i = 0; i < 360; i++){
+            if(i % 20 == 0 && r.nextInt(3) == 1){
+                this.getLevel().addParticle(ParticleTypes.SMOKE,
+                        this.getX() + Math.cos(i), this.getY(), this.getZ() + Math.sin(i),
+                        0.0, 0.0, 0.0);
+            }
+        }**/
+
+
+
     }
 
     public void handleAnimations(){
@@ -72,7 +95,13 @@ public class PillagerQueenEntity extends Monster {
 
     @Override
     public void handleEntityEvent(byte b) {
-        if(b == 98){
+        if(b == 97){
+            for(int i = 0; i < 10; i++){
+                this.level.addParticle(ParticleTypes.CRIT,
+                        this.getRandomX(4), this.getRandomY(), this.getRandomZ(4),
+                        2, 2, 2);
+            }
+        }else if(b == 98){
             this.meleeAttackAnimationState.start(this.tickCount);
         }else if(b == 99){
             this.floatingAnimationState.startIfStopped(this.tickCount);
@@ -84,6 +113,7 @@ public class PillagerQueenEntity extends Monster {
     }
 
     class QueenMeleeAttackGoal extends Goal {
+        private final PillagerQueenEntity pillagerQueen;
         protected final PathfinderMob mob;
         private final double speedModifier;
         private final boolean followingTargetEvenIfNotSeen;
@@ -98,7 +128,8 @@ public class PillagerQueenEntity extends Monster {
         private static final long COOLDOWN_BETWEEN_CAN_USE_CHECKS = 20L;
         private int damageTimer = -1;
 
-        public QueenMeleeAttackGoal(PathfinderMob pathfinderMob, double d, boolean bl) {
+        public QueenMeleeAttackGoal(PillagerQueenEntity pillagerQueen, PathfinderMob pathfinderMob, double d, boolean bl) {
+            this.pillagerQueen = pillagerQueen;
             this.mob = pathfinderMob;
             this.speedModifier = d;
             this.followingTargetEvenIfNotSeen = bl;
@@ -210,6 +241,10 @@ public class PillagerQueenEntity extends Monster {
                     ticksUntilNextAttack = 40;
                 }else if(this.damageTimer == 0) {
                     this.mob.doHurtTarget(livingEntity);
+
+                    //playSound(SoundEvents.ANVIL_LAND, 1.0F, 1.0F);
+
+                    this.mob.getLevel().broadcastEntityEvent(this.mob, (byte) 97);
                     this.mob.getTarget().knockback(2.5F, 5.5F, 2.5F);
                     this.resetAttackCooldown();
                 }
@@ -290,7 +325,14 @@ public class PillagerQueenEntity extends Monster {
             LivingEntity livingEntity = pillagerQueen.getTarget();
             if(livingEntity != null){
                 pillagerQueen.getLookControl().setLookAt(livingEntity, 30.0F, 30.0F);
+
+                Vec3 vec3 = pillagerQueen.getTarget().getEyePosition();
+                AABB aabb = pillagerQueen.getBoundingBox().inflate(15.0);
+
+                if(!aabb.contains(vec3)) pillagerQueen.moveControl.setWantedPosition(livingEntity.getX(), pillagerQueen.getY(), livingEntity.getZ(), 5.0);
             }
+
+
 
         }
     }
