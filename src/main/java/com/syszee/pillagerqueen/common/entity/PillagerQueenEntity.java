@@ -478,7 +478,10 @@ public class PillagerQueenEntity extends Raider {
              *             }
              */
 
-            pillagerQueen.moveControl.setWantedPosition(getX(), goalHeight, getZ(), 5F);
+
+            if(!Math.round(pillagerQueen.getY()) == Math.round(goalHeight)){
+                pillagerQueen.moveControl.setWantedPosition(getX(), goalHeight, getY(), 5F);
+            }
             //pillagerQueen.getNavigation().moveTo(getX(), goalHeight, getZ(), 1);
 
             LivingEntity livingEntity = pillagerQueen.getTarget();
