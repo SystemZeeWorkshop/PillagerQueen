@@ -9,18 +9,20 @@
           "name": "minecraft:iron_sword",
           "functions": [
             {
-              "function": "minecraft:enchant_randomly",
-              "enchantments": [
-                "minecraft:sharpness"
-              ]
-            },
-            {
               "function": "minecraft:set_damage",
               "damage": {
-                "min": 0.2,
-                "max": 0.8
-              },
-              "add": false
+                "min": 0.25,
+                "max": 0.75
+              }
+            },
+            {
+              "function": "minecraft:enchant_randomly",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
             }
           ]
         }

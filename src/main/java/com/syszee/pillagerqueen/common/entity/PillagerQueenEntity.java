@@ -24,9 +24,12 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.FlyingMoveControl;
+import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -34,6 +37,7 @@ import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NaturalSpawner;
@@ -68,9 +72,8 @@ public class PillagerQueenEntity extends Raider {
         this.goalSelector.addGoal(3, new QueenFlyingGoal(this));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[]{Raider.class})).setAlertOthers(new Class[0]));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal(this, Player.class, true));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, AbstractVillager.class, false));
+        //this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, AbstractVillager.class, false));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, IronGolem.class, true));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, ArmorStand.class, true));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -78,8 +81,10 @@ public class PillagerQueenEntity extends Raider {
                 .add(Attributes.MOVEMENT_SPEED, 0.45)
                 .add(Attributes.FOLLOW_RANGE, 64.0)
                 .add(Attributes.MAX_HEALTH, 48.0)
+                .add(Attributes.FOLLOW_RANGE, 35)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.8F)
-                .add(Attributes.ATTACK_DAMAGE, 6.0F);
+                .add(Attributes.FLYING_SPEED, 0.45F)
+                .add(Attributes.ATTACK_DAMAGE, 8.0F);
     }
 
     @Override
@@ -113,7 +118,7 @@ public class PillagerQueenEntity extends Raider {
 
     @Override
     public int getExperienceReward() {
-        this.xpReward = 40;
+        this.xpReward = 800 + random.nextInt(750);
         return super.getExperienceReward();
     }
 
@@ -150,7 +155,7 @@ public class PillagerQueenEntity extends Raider {
             for(int i = 0; i < 360; i++){
                 if(i % 2 == 0){
                     this.getLevel().addParticle(ParticleTypes.LARGE_SMOKE,
-                            this.getX() + Math.cos(i), this.getY(), this.getZ() + Math.sin(i),
+                            this.getX() + Math.cos(i), this.getY(1), this.getZ() + Math.sin(i),
                             Math.cos(i), -0.25, Math.sin(i));
                 }
             }
@@ -178,28 +183,26 @@ public class PillagerQueenEntity extends Raider {
             // SHOULD WE SPAWN A PATROL
             if ((!this.level.isClientSide)
                     && !hasSpawnedPatrol()
+                    && !damageSource.isFall()
                     && this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)
                     && this.level.getGameRules().getBoolean(GameRules.RULE_DO_PATROL_SPAWNING)){
 
                     ServerLevel serverLevel = (ServerLevel)this.level;
                     int targetY = this.getLevel().getHeight(Heightmap.Types.WORLD_SURFACE, this.getBlockX(), this.getBlockZ());
                     BlockPos blockPos = new BlockPos(this.getRandomX(10), targetY, this.getRandomZ(10));
-
-                    // SPAWN LEADER
-                    PatrollingMonster patrollingLeader = (PatrollingMonster)EntityType.PILLAGER.create(serverLevel);
-                    if (patrollingLeader != null) {
-                        patrollingLeader.setPatrolLeader(true);
-                        patrollingLeader.findPatrolTarget();
-                    }
-                    patrollingLeader.setPos((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
-                    patrollingLeader.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(blockPos), MobSpawnType.PATROL, (SpawnGroupData)null, (CompoundTag)null);
-                    serverLevel.addFreshEntityWithPassengers(patrollingLeader);
                     setHasSpawnedPatrol(true);
+                    int amountOfAmbush = random.nextInt(8) + 1;
 
-                    // SPAWN SUBORDINATES
-                    for(int i = 0; i < 3; i++){
+                    // SPAWN AMBUSH
+                    for(int i = 0; i < amountOfAmbush; i++){
                         blockPos = new BlockPos(this.getRandomX(10), targetY, this.getRandomZ(10));
                         PatrollingMonster patrollingMonster = (PatrollingMonster)EntityType.PILLAGER.create(serverLevel);
+
+                        // 10% chance of spawning a vindicator instead
+                        if(random.nextInt(9) == 1) {
+                            patrollingMonster = (PatrollingMonster)EntityType.VINDICATOR.create(serverLevel);
+                        }
+
                         patrollingMonster.setPos((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
                         patrollingMonster.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(blockPos), MobSpawnType.PATROL, (SpawnGroupData)null, (CompoundTag)null);
                         serverLevel.addFreshEntityWithPassengers(patrollingMonster);
@@ -232,6 +235,18 @@ public class PillagerQueenEntity extends Raider {
     public SoundEvent getCelebrateSound() {
         return null;
     }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return ModSounds.PILLAGER_QUEEN_DEATH;
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource damageSource) {
+        return ModSounds.PILLAGER_QUEEN_HURT;
+    }
+
+
 
     public void setHasSpawnedPatrol(boolean b){
         this.getEntityData().set(HAS_SPAWNED_PATROL, b);
@@ -371,11 +386,17 @@ public class PillagerQueenEntity extends Raider {
                 }else if(this.damageTimer == 0) {
                     this.mob.doHurtTarget(livingEntity);
 
-                    //playSound(SoundEvents.ANVIL_LAND, 1.0F, 1.0F);
+                    // SOUND: MELEE
+                    getLevel().playSound(null,
+                            getX(), getY(), getZ(),
+                            ModSounds.PILLAGER_QUEEN_MELEE,
+                            SoundSource.HOSTILE,
+                            1.0F, 1.0F);
 
                     this.mob.getLevel().broadcastEntityEvent(this.mob, (byte) 97);
-                    this.mob.getTarget().knockback(2.5F, 5.5F, 2.5F);
+                    livingEntity.knockback(pillagerQueen.getX() - livingEntity.getX(), 3.5F, pillagerQueen.getZ() - livingEntity.getZ());
                     this.resetAttackCooldown();
+
                 }
             }
 
@@ -424,13 +445,17 @@ public class PillagerQueenEntity extends Raider {
         @Override
         public void start() {
             super.start();
+            pillagerQueen.moveControl = new FlyingMoveControl(pillagerQueen, 20, true);
+            pillagerQueen.getNavigation().setCanFloat(true);
             pillagerQueen.getLevel().broadcastEntityEvent(pillagerQueen, (byte) 99);
         }
 
         @Override
         public void stop() {
             super.stop();
+            pillagerQueen.moveControl = new MoveControl(pillagerQueen);
             pillagerQueen.setNoGravity(false);
+            pillagerQueen.getNavigation().setCanFloat(false);
             pillagerQueen.getLevel().broadcastEntityEvent(pillagerQueen, (byte) 100);
         }
 
@@ -442,14 +467,19 @@ public class PillagerQueenEntity extends Raider {
 
             int targetY = pillagerQueen.getLevel().getHeight(Heightmap.Types.WORLD_SURFACE, pillagerQueen.getBlockX(), pillagerQueen.getBlockZ());
             float maxFloatHeight = (pillagerQueen.getHealth()/4); // 12
-            int goalHeight = (int) (targetY + maxFloatHeight);
+            float goalHeight = targetY + maxFloatHeight;
             BlockPos blockPos = new BlockPos(pillagerQueen.getX(), pillagerQueen.getY(), pillagerQueen.getZ());
 
-            if((pillagerQueen.getY() < goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos.above(2))){
-                pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() + 0.5F, pillagerQueen.getZ());
-            }else if((pillagerQueen.getY() > goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos)){
-                pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() - 1F, pillagerQueen.getZ());
-            }
+            /**
+             * if((pillagerQueen.getY() <= goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos.above(2))){
+             *                 pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() + 1F, pillagerQueen.getZ());
+             *             }else if((pillagerQueen.getY() > goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos)){
+             *                 pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() - 1F, pillagerQueen.getZ());
+             *             }
+             */
+
+            pillagerQueen.moveControl.setWantedPosition(getX(), goalHeight, getZ(), 5F);
+            //pillagerQueen.getNavigation().moveTo(getX(), goalHeight, getZ(), 1);
 
             LivingEntity livingEntity = pillagerQueen.getTarget();
             if(livingEntity != null){
@@ -458,7 +488,7 @@ public class PillagerQueenEntity extends Raider {
                 Vec3 vec3 = pillagerQueen.getTarget().getEyePosition();
                 AABB aabb = pillagerQueen.getBoundingBox().inflate(15.0);
 
-                if(!aabb.contains(vec3)) pillagerQueen.moveControl.setWantedPosition(livingEntity.getX(), pillagerQueen.getY(), livingEntity.getZ(), 8.0);
+                if(!aabb.contains(vec3)) pillagerQueen.moveControl.setWantedPosition(livingEntity.getX(), goalHeight, livingEntity.getZ(), 8.0);
             }
 
         }

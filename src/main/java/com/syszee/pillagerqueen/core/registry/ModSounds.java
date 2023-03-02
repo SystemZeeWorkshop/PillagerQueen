@@ -9,6 +9,8 @@ public class ModSounds {
     public static final SoundEvent EXAMPLE = register("example_sound");
     public static final SoundEvent PILLAGER_QUEEN_AMBUSH = register("entity.pillager_queen.ambush");
     public static final SoundEvent PILLAGER_QUEEN_MELEE = register("entity.pillager_queen.melee");
+    public static final SoundEvent PILLAGER_QUEEN_DEATH = register("entity.pillager_queen.death");
+    public static final SoundEvent PILLAGER_QUEEN_HURT = register("entity.pillager_queen.hurt");
 
     public static void init() {
     }

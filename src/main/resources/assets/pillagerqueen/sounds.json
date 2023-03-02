@@ -4,11 +4,22 @@
       "pillagerqueen:entity/pillager_queen/ambush"
     ]
   },
+  "entity.pillager_queen.death": {
+    "sounds": [
+      "pillagerqueen:entity/pillager_queen/death"
+    ]
+  },
   "entity.pillager_queen.melee": {
     "sounds": [
       "pillagerqueen:entity/pillager_queen/melee",
       "pillagerqueen:entity/pillager_queen/melee2",
       "pillagerqueen:entity/pillager_queen/melee3"
+    ]
+  },
+  "entity.pillager_queen.hurt": {
+    "sounds": [
+      "pillagerqueen:entity/pillager_queen/hurt1",
+      "pillagerqueen:entity/pillager_queen/hurt2"
     ]
   }
 }
