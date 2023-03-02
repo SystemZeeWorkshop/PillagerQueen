@@ -73,14 +73,13 @@ public class PillagerQueenEntity extends Raider {
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[]{Raider.class})).setAlertOthers(new Class[0]));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal(this, Player.class, true));
         //this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, AbstractVillager.class, false));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal(this, IronGolem.class, true));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MOVEMENT_SPEED, 0.45)
                 .add(Attributes.FOLLOW_RANGE, 64.0)
-                .add(Attributes.MAX_HEALTH, 48.0)
+                .add(Attributes.MAX_HEALTH, 64.0)
                 .add(Attributes.FOLLOW_RANGE, 35)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.8F)
                 .add(Attributes.FLYING_SPEED, 0.45F)
@@ -102,18 +101,6 @@ public class PillagerQueenEntity extends Raider {
     public void tick() {
         super.tick();
         handleAnimations();
-
-        Random r = new Random();
-
-        /**
-         for(int i = 0; i < 360; i++){
-         if(i % 2 == 0){
-         this.getLevel().addParticle(ParticleTypes.POOF,
-         this.getX() + Math.cos(i), this.getY(), this.getZ() + Math.sin(i),
-         Math.cos(i), 0.0, Math.sin(i));
-         }
-         }
-         **/
     }
 
     @Override
@@ -124,9 +111,13 @@ public class PillagerQueenEntity extends Raider {
 
     public void handleAnimations(){
 
-        if(this.isAggressive()){
-            this.walkAnimationState.startIfStopped(this.tickCount);
-            this.spawnSprintParticle();
+        if(this.getNavigation().isInProgress() || this.getDeltaMovement().x() > 0 || this.getDeltaMovement().z > 0){
+            if(!this.getNavigation().canFloat()){
+                if(this.isOnGround()){
+                    this.walkAnimationState.startIfStopped(this.tickCount);
+                    this.spawnSprintParticle();
+                }
+            }
         }else this.walkAnimationState.stop();
 
         if(!this.isOnGround() && !this.isNoGravity() && !this.isAggressive()){
@@ -228,7 +219,11 @@ public class PillagerQueenEntity extends Raider {
 
             }
 
-        return super.hurt(damageSource, f);
+        if(!damageSource.isFall()){
+            return super.hurt(damageSource, f);
+        }else {
+            return false;
+        }
     }
 
     @Override
@@ -385,6 +380,7 @@ public class PillagerQueenEntity extends Raider {
                     ticksUntilNextAttack = 40;
                 }else if(this.damageTimer == 0) {
                     this.mob.doHurtTarget(livingEntity);
+                    livingEntity.knockback(5.0F, pillagerQueen.getX() - livingEntity.getX(), pillagerQueen.getZ() - livingEntity.getZ());
 
                     // SOUND: MELEE
                     getLevel().playSound(null,
@@ -435,17 +431,16 @@ public class PillagerQueenEntity extends Raider {
 
         @Override
         public boolean canUse() {
-            if(pillagerQueen.getHealth() > pillagerQueen.getMaxHealth()/2){
+            if(pillagerQueen.getHealth() > pillagerQueen.getMaxHealth()/2)
                 return true;
-            }else{
+            else
                 return false;
-            }
         }
 
         @Override
         public void start() {
             super.start();
-            pillagerQueen.moveControl = new FlyingMoveControl(pillagerQueen, 20, true);
+            pillagerQueen.moveControl = new FlyingMoveControl(pillagerQueen, 50, true);
             pillagerQueen.getNavigation().setCanFloat(true);
             pillagerQueen.getLevel().broadcastEntityEvent(pillagerQueen, (byte) 99);
         }
@@ -464,33 +459,27 @@ public class PillagerQueenEntity extends Raider {
             super.tick();
 
             pillagerQueen.setNoGravity(true);
-
+            if(pillagerQueen.getTarget() != null) pillagerQueen.getLookControl().setLookAt(pillagerQueen.getTarget());
             int targetY = pillagerQueen.getLevel().getHeight(Heightmap.Types.WORLD_SURFACE, pillagerQueen.getBlockX(), pillagerQueen.getBlockZ());
             float maxFloatHeight = (pillagerQueen.getHealth()/4); // 12
             float goalHeight = targetY + maxFloatHeight;
             BlockPos blockPos = new BlockPos(pillagerQueen.getX(), pillagerQueen.getY(), pillagerQueen.getZ());
 
-            /**
-             * if((pillagerQueen.getY() <= goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos.above(2))){
-             *                 pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() + 1F, pillagerQueen.getZ());
-             *             }else if((pillagerQueen.getY() > goalHeight) && pillagerQueen.level.isEmptyBlock(blockPos)){
-             *                 pillagerQueen.moveTo(pillagerQueen.getX(), pillagerQueen.getY() - 1F, pillagerQueen.getZ());
-             *             }
-             */
 
-
-            if(!Math.round(pillagerQueen.getY()) == Math.round(goalHeight)){
-                pillagerQueen.moveControl.setWantedPosition(getX(), goalHeight, getY(), 5F);
+            // MOVE IF NOT AT CORRECT HEIGHT
+            if(Math.round(pillagerQueen.getY()) != Math.round(goalHeight)){
+                pillagerQueen.moveControl.setWantedPosition(Math.round(pillagerQueen.getX()), goalHeight, Math.round(pillagerQueen.getZ()), 8F);
+                pillagerQueen.setYRot(0.0F);
+                pillagerQueen.setYBodyRot(0.0F);
             }
-            //pillagerQueen.getNavigation().moveTo(getX(), goalHeight, getZ(), 1);
 
+
+            // MOVE TOWARDS FAR PLAYER
             LivingEntity livingEntity = pillagerQueen.getTarget();
             if(livingEntity != null){
                 pillagerQueen.getLookControl().setLookAt(livingEntity, 30.0F, 30.0F);
-
                 Vec3 vec3 = pillagerQueen.getTarget().getEyePosition();
                 AABB aabb = pillagerQueen.getBoundingBox().inflate(15.0);
-
                 if(!aabb.contains(vec3)) pillagerQueen.moveControl.setWantedPosition(livingEntity.getX(), goalHeight, livingEntity.getZ(), 8.0);
             }
 
